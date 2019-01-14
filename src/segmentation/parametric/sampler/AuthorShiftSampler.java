@@ -240,8 +240,11 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
                 l[t] = HAS_SHIFT;
             } else {
                 l[t] = NO_SHIFT;
+                int rand_l = rand.nextInt(2);
+                if (rand_l == 1){
+                    l[t] = HAS_SHIFT;
+                }
             }
-            //l[t] = rand.nextInt(2);
             author_shift.increment(authors[t], l[t]);
             if (l[t] == HAS_SHIFT) // create new segment
             {

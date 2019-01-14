@@ -308,6 +308,8 @@ public class TopicSegmentation extends AbstractExperiment {
         String asm_folder = experimentPath + sampler.getSamplerFolder();
         IOUtils.createFolder(asm_folder);
 
+        //sampler.setDebug(false);
+
         sampler.sample();
         sampler.outputLogLikelihoods(asm_folder + "loglikelihood.txt");
         sampler.outputShiftAssignments(asm_folder + "shift_asgn.txt");
@@ -317,6 +319,9 @@ public class TopicSegmentation extends AbstractExperiment {
         sampler.outputPi(asm_folder + "pi.txt");
         sampler.outputTheta(asm_folder + "theta.txt");
         IOUtils.outputTopWords(sampler.getPhi(), word_vocab, 20, asm_folder + "topwords.txt");
+
+        sampler.outputAvgSampledL(asm_folder + "avg_sampled_shift.txt");
+        sampler.outputHyperparameters(asm_folder + "hyperparameters.txt");
     }
 
     private void runNonparametricSITS() throws Exception {
