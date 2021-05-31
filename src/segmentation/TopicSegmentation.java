@@ -242,29 +242,31 @@ public class TopicSegmentation extends AbstractExperiment {
             System.out.println("--- --- total number of words: " + total_num_words);
         }
 
-        // compute TFIDF
+        //compute TFIDF
         if (verbose) {
             System.out.println("--- Computing TF-IDF ...");
         }
 
-        idfs = new double[vocab_size];
-        int num_acutal_shows = 0; // exclude boundary empty shows
-        for (int[] doc : documents) {
-            if (doc.length == 0) {
-                continue;
-            }
-            num_acutal_shows++;
-            Set<Integer> doc_word_set = new HashSet<Integer>(); // set of unique words in the show
-            for (int word : doc) {
-                doc_word_set.add(word);
-            }
-            for (int word : doc_word_set) {
-                idfs[word]++; // first count dfs
-            }
-        }
-        for (int i = 0; i < idfs.length; i++) {
-            idfs[i] = Math.log((double) (num_acutal_shows + 1) / (idfs[i] + 1)); // compute idfs
-        }
+        // // just word counts
+        // idfs = new double[vocab_size];
+        // int num_acutal_shows = 0; // exclude boundary empty shows
+        // for (int[] doc : documents) {
+        //     if (doc.length == 0) {
+        //         continue;
+        //     }
+        //     num_acutal_shows++;
+        //     Set<Integer> doc_word_set = new HashSet<Integer>(); // set of unique words in the show
+        //     for (int word : doc) {
+        //         doc_word_set.add(word);
+        //     }
+        //     for (int word : doc_word_set) {
+        //         idfs[word]++; // first count dfs
+        //     }
+        // }
+        // //don't do idf
+        // for (int i = 0; i < idfs.length; i++) {
+        //     idfs[i] = Math.log((double) (num_acutal_shows + 1) / (idfs[i] + 1)); // compute idfs
+        // }
 
 
         // select experimental shows
@@ -296,32 +298,42 @@ public class TopicSegmentation extends AbstractExperiment {
         double alpha = CLIUtils.getDoubleArgument(cmd, "alpha", 0.1);
         double beta = CLIUtils.getDoubleArgument(cmd, "beta", 0.1);
         double gamma = CLIUtils.getDoubleArgument(cmd, "gamma", 0.25);
+
         int K = CLIUtils.getIntegerArgument(cmd, "K", 25);
+        int I = CLIUtils.getIntegerArgument(cmd, "I", 10);
+
 
         AuthorShiftSampler sampler = new AuthorShiftSampler();
         sampler.configure(experimentPath, documents, authors,
                 K, author_vocab.size(), word_vocab.size(),
                 alpha, beta, gamma,
-                burn_in, max_iters, sample_lag);
+                burn_in, max_iters, sample_lag, I);
         sampler.setPrefix("RANDOM"); // random intialization
+        //sampler.setParamsOptimized(true);
+
 
         String asm_folder = experimentPath + sampler.getSamplerFolder();
         IOUtils.createFolder(asm_folder);
 
+
         //sampler.setDebug(false);
 
         sampler.sample();
+
         sampler.outputLogLikelihoods(asm_folder + "loglikelihood.txt");
-        sampler.outputShiftAssignments(asm_folder + "shift_asgn.txt");
-        sampler.outputTopicAssignments(asm_folder + "topic_asgn.txt");
+        //sampler.outputShiftAssignments(asm_folder + "shift_asgn.txt");
+        //sampler.outputTopicAssignments(asm_folder + "topic_asgn.txt");
 
         sampler.outputPhi(asm_folder + "phi.txt");
         sampler.outputPi(asm_folder + "pi.txt");
         sampler.outputTheta(asm_folder + "theta.txt");
         IOUtils.outputTopWords(sampler.getPhi(), word_vocab, 20, asm_folder + "topwords.txt");
 
-        sampler.outputAvgSampledL(asm_folder + "avg_sampled_shift.txt");
+        //sampler.outputAvgSampledL(asm_folder + "avg_sampled_shift.txt");
         sampler.outputHyperparameters(asm_folder + "hyperparameters.txt");
+        //sampler.outputAllShiftAssignments(asm_folder + "all_sampled_shift.txt");
+        //sampler.outputAllTopicAssignments(asm_folder + "all_topic_asgn.txt");
+        
     }
 
     private void runNonparametricSITS() throws Exception {
@@ -395,6 +407,9 @@ public class TopicSegmentation extends AbstractExperiment {
             addOption("lambda", "lambda");
             addOption("beta", "beta");
             addOption("gamma", "gamma");
+
+            //seed
+            addOption("I", "I");
 
             addOption("model", "Model");
 

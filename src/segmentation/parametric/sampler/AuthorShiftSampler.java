@@ -14,6 +14,14 @@ import util.sampling.Segment;
 import util.sampling.SymmetricFiniteMultinomials;
 import util.sampling.TurnVector;
 
+//added
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
+
+
+
 /**
  * Parametric SITS
  *
@@ -27,6 +35,7 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
     public static final int HAS_SHIFT = 1;
     public static final int NO_SHIFT = 0;
     private int K; // number of topics (input parameter)
+    private int I; // number of topics (input parameter)
     private int J; // number of authors
     private int T; // total number of turns (including separated turns)
     private int V; // vocabulary size
@@ -39,6 +48,8 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
     private SymmetricFiniteMultinomials topic_word;
     private SymmetricFiniteMultinomials author_shift;
     private ArrayList<int[]> sampledLs = new ArrayList<int[]>();
+    private ArrayList<int[]> sampledZs = new ArrayList<int[]>();
+
 
     @Override
     public String getSamplerName() {
@@ -51,13 +62,14 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
                 + "_b-" + formatter.format(this.hyperparams.get(BETA))
                 + "_g-" + formatter.format(this.hyperparams.get(GAMMA))
                 + "_K-" + K
+                + "_I-" + I
                 + "_opt-" + paramOptimized;
     }
 
     public void configure(String folder, int[][][] words, int[][] authors,
             int K, int J, int V,
             double alpha, double beta, double gamma,
-            int burnin, int maxiter, int samplelag) {
+            int burnin, int maxiter, int samplelag, int I) {
         // change format
         int totalTurns = 0;
         for (int i = 0; i < authors.length; i++) {
@@ -76,19 +88,20 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
             newSpeakers[index] = -1;
             index++;
         }
-        configure(folder, newWords, newSpeakers, K, J, V, alpha, beta, gamma, burnin, maxiter, samplelag);
+        configure(folder, newWords, newSpeakers, K, J, V, alpha, beta, gamma, burnin, maxiter, samplelag, I);
     }
 
     public void configure(String folder, int[][] words, int[] authors,
             int K, int J, int V,
             double alpha, double beta, double gamma,
-            int burnin, int maxiter, int samplelag) {
+            int burnin, int maxiter, int samplelag, int I) {
         this.words = words;
         this.authors = authors;
 
         this.K = K;
         this.J = J;
         this.V = V;
+        this.I = I;
         this.T = words.length;
 
         this.hyperparams = new ArrayList<Double>();
@@ -102,6 +115,7 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
         this.setSamplerConfiguration(burnin, maxiter, samplelag);
 
         this.folder = folder;
+
     }
 
     @Override
@@ -239,10 +253,12 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
             {
                 l[t] = HAS_SHIFT;
             } else {
-                l[t] = NO_SHIFT;
-                int rand_l = rand.nextInt(2);
+                // l[t] = NO_SHIFT;
+                int rand_l = rand.nextInt(I);
                 if (rand_l == 1){
                     l[t] = HAS_SHIFT;
+                }else{
+                    l[t] = NO_SHIFT;
                 }
             }
             author_shift.increment(authors[t], l[t]);
@@ -277,12 +293,16 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
             logln("Iterating ...");
         }
 
+        String outputFile1 = folder + getSamplerName() + "/all_sampled_shift_asgn.txt";
+        String outputFile2 = folder + getSamplerName() + "/all_sampled_topic_asgn.txt";
+
+
         for (iter = 0; iter < MAX_ITER; iter++) {
             double loglikelihood = this.getLogLikelihood();
             logLikelihoods.add(loglikelihood);
 
             if (verbose) {
-                if (iter % LAG == 0) {
+                if (iter % 100 == 0) {
                     if (iter < BURN_IN) {
                         logln("--- Burning in. Iter " + iter
                                 + "\t llh = " + loglikelihood);
@@ -293,13 +313,25 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
                 }
             }
 
+            // print progress for how many sampled l's
+            if (iter % 500 == 0){
+                int n_shifts = 0;
+                for (int t = 0; t < T; t++) {
+                    if (l[t] == 1){
+                        n_shifts += 1;
+                    }
+                }
+                logln("Num Shifts: " + n_shifts);
+            }
+
+
             for (int t = 0; t < T; t++) {
                 if (authors[t] == -1) {
                     continue;
                 }
 
                 if (t != 0 && authors[t - 1] != -1) { // only sample t for non-first turns
-                    if (words[t].length > 5) {
+                    if (words[t].length >= 5) { //this is where you change the length threshold
                         sampleL(t);
                     } else {
                         l[t] = 0;
@@ -315,27 +347,16 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
             }
 
             if (iter >= BURN_IN) {
-                if (iter % LAG == 0) {
-                    // record sampled topic shift indicators
-                    int[] sampledL = new int[l.length];
+                //always record l's
+                writetofile_l(l, outputFile1);
 
-//                    System.out.println("iter = " + iter + ". sampledL size = " + sampledL.length);
-
-                    for (int x = 0; x < sampledL.length; x++) {
-                        sampledL[x] = l[x];
-                    }
-                    sampledLs.add(sampledL);
-
-                    // slice sampling for parameters
-                    if (paramOptimized) {
-                        if (verbose) {
-                            logln("--- --- Slice sampling ...");
-                        }
-
-                        sliceSample();
-                        this.sampledParams.add(this.cloneHyperparameters());
+                if (iter >= BURN_IN){
+                    //thin for recording z's
+                    if (iter % LAG == 0) {
+                        writetofile_z(z, outputFile2);
                     }
                 }
+
             }
 
             if (debug) {
@@ -343,6 +364,83 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
             }
         }
     }
+
+    public static void writetofile_l(int[] content, String filename) {
+
+        BufferedWriter bw = null;
+        FileWriter fw = null;
+
+        try {
+            fw = new FileWriter(filename, true);//hard coded in to append
+            bw = new BufferedWriter(fw);
+
+            String[] out = new String[content.length];
+            for (int i = 0; i < out.length; i++){
+                out[i] = Integer.toString(content[i]);
+            }
+            bw.write(String.join(" ", out));
+            bw.newLine();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (bw != null)
+                    bw.close();
+                if (fw != null)
+                    fw.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public static void writetofile_z(int[][] content, String filename) {
+
+        BufferedWriter bw = null;
+        FileWriter fw = null;
+
+        try {
+            fw = new FileWriter(filename, true);//hard coded in to append
+            bw = new BufferedWriter(fw);
+
+
+                    int n_words = 0;
+                    for (int i = 0; i < content.length; i++) {
+                        n_words = n_words + content[i].length;
+                    }
+                    int[] sampledZ = new int[n_words];
+                    int pos = 0;
+                    for (int i = 0; i < content.length; i++) {
+                        for (int j = 0; j < content[i].length; j++){
+                            sampledZ[pos] = content[i][j];
+                            pos = pos + 1;
+                        } 
+                    }
+
+            String[] out = new String[sampledZ.length];
+            for (int i = 0; i < sampledZ.length; i++){
+                out[i] = Integer.toString(sampledZ[i]);
+            }
+            bw.write(String.join(" ", out));
+            bw.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (bw != null)
+                    bw.close();
+                if (fw != null)
+                    fw.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+
+
+
 
     /**
      * Sample the shift indicator at a given turn
@@ -694,6 +792,18 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
 
     public void outputTopicAssignments(String outputFile) throws Exception {
         IOUtils.outputLatentVariableAssignment(this.getTopicAssignments(), outputFile);
+    }
+
+
+    public void outputAllTopicAssignments(String outputFile) throws Exception {
+        BufferedWriter writer = IOUtils.getBufferedWriter(outputFile);
+        for (int j = 0; j < sampledZs.get(0).length; j++) {
+            for (int i = 0; i < sampledZs.size(); i++) {
+                writer.write(sampledZs.get(i)[j] + " ");
+            }
+            writer.write("\n");
+        }
+        writer.close();
     }
 
     public int[][] inputTopicAssignments(String inputFile) throws Exception {

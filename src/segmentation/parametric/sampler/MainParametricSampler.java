@@ -18,6 +18,7 @@ public class MainParametricSampler {
     protected static ArrayList<String> word_vocab;
     protected static ArrayList<String> author_vocab;
     protected static int K = 25;
+    protected static int I = 10;
     protected static double alpha = 0.1;
     protected static double beta = 0.1;
     protected static double gamma = 0.1;
@@ -62,7 +63,7 @@ public class MainParametricSampler {
         asm.configure(samplingFolder, words, authors,
                 K, author_vocab.size(), word_vocab.size(),
                 alpha, beta, gamma,
-                burnIn, maxIter, sampleLag);
+                burnIn, maxIter, sampleLag, I);
         asm.sample();
         asm.outputLogLikelihoods(asm_folder + "loglikelihood.txt");
         asm.outputShiftAssignments(asm_folder + "shift_asgn.txt");
