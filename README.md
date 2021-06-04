@@ -1,7 +1,7 @@
 About
 ====
 
-This fork of [vietansegan/sits](https://github.com/vietansegan/sits) makes a few notable changes to the implementation of the Gibbs samplers for the Parametric SITS models.  This README updates the [vietansegan/sits](https://github.com/vietansegan/sits) README by denoting key changes to the original functions with <mark>marked text</mark> and adding a section on the output data. 
+This fork of [vietansegan/sits](https://github.com/vietansegan/sits) makes a few notable changes to the implementation of the Gibbs samplers for the Parametric SITS models.  This README updates the [vietansegan/sits](https://github.com/vietansegan/sits) README by denoting key changes to the original functions in **bold text** and adding a section on the output data. 
 
 See [erossiter/sitsr](https://github.com/erossiter/sitsr) for helper functions to run this implementation of parametric SITS from RStudio.
 
@@ -83,12 +83,12 @@ Here are the arguments:
 - `<output_folder>`: path to the folder to store the output
 - `burnIn`: number of iterations during the burn-in period (default: 2500)
 - `maxIter`: maximum number of iterations (default: 5000)
-- `sampleLag`: lag between samples <mark>only for topic parameters Z </mark> (default: 100) 
+- `sampleLag`: lag between samples, **updated only for topic parameters Z** (default: 100) 
 - `K`: number of topics (default: 25)
 - `alpha`: Dirichlet parameter for documents' topic distribution (default: 0.1)
 - `beta`: Dirichlet parameter for topics' word distribution (default: 0.1)
 - `gamma`: Beta parameter for speakers' topic shift distribution (default: 0.25)
-- `I`: <mark>starting values for topic shift parameters L chosen such that P(L=1) = 1/I (default: 10)</mark>
+- `I`: **added argument to set starting values for topic shift parameters L, chosen such that P(L=1) = 1/I (default: 10)**
 
 
 
@@ -97,22 +97,22 @@ Example:
 java -cp 'dist/sits.jar:lib/*' segmentation.TopicSegmentation --dataset debate2008 --input data/debate2008/ldaformat/ --output data/segmentation/debate2008/ --burnIn 100 --maxIter 5000 --sampleLag 50 --gamma 2.5 --model param -v --alpha 0.1 --beta 0.1 --I 10
 ```
 
-Additional notes on this implementation:
+**Additional notes on this implementation:**
 
-- <mark> No slice sampling of hyperparameters</mark>
-- <mark> Does not sample topic shift parameters L for turns with less than 5 words</mark>
+- **No slice sampling of hyperparameters**
+- **Does not sample topic shift parameters L for turns with less than 5 words**
 
 
 ## Output Data
 
 
-- `all_sampled_shift_asgn.txt` <mark>Full chains of topic shift parameters (L)</mark>
-- `all_sampled_topic_asgn.txt` <mark>Full chains of topic parameters (Z), subject to `sampleLag` argument</mark>
-- `hyperparameters.txt` Researcher chosen hyperparameters
-- `log.txt` Log file
-- `logikelihood.txt` Loglikelihood at each iteration
-- `phi.txt`: Phi parameters from final draw from Gibbs sampler
-- `pi.txt`: Pi parameters from final draw from Gibbs sampler
-- `theta.txt`: Theta parameters from final draw from Gibbs sampler
-- `topwords.txt`: Highest probability words for each topic from final draw from Gibbs sampler
+- `all_sampled_shift_asgn.txt`: **now returns full chains of topic shift parameters**
+- `all_sampled_topic_asgn.txt`: **now returns full chains of topic parameters, subject to `sampleLag` argument**
+- `hyperparameters.txt`: researcher chosen hyperparameters
+- `log.txt`: log file
+- `logikelihood.txt`: loglikelihood at each iteration
+- `phi.txt`: phi parameters from final draw from Gibbs sampler
+- `pi.txt`: pi parameters from final draw from Gibbs sampler
+- `theta.txt`: theta parameters from final draw from Gibbs sampler
+- `topwords.txt`: highest probability words for each topic from final draw from Gibbs sampler
 
