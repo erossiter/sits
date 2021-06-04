@@ -35,7 +35,7 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
     public static final int HAS_SHIFT = 1;
     public static final int NO_SHIFT = 0;
     private int K; // number of topics (input parameter)
-    private int I; // number of topics (input parameter)
+    private int I; 
     private int J; // number of authors
     private int T; // total number of turns (including separated turns)
     private int V; // vocabulary size
@@ -254,8 +254,8 @@ public class AuthorShiftSampler extends AbstractTopicShiftSampler {
                 l[t] = HAS_SHIFT;
             } else {
                 // l[t] = NO_SHIFT;
-                int rand_l = rand.nextInt(I);
-                if (rand_l == 1){
+                int rand_l = rand.nextInt(I); //Returns number between [0,I), so P(l=1) = 1/I
+                if (rand_l == 1){ 
                     l[t] = HAS_SHIFT;
                 }else{
                     l[t] = NO_SHIFT;
